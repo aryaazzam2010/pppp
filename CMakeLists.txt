@@ -5,7 +5,7 @@
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, version 3.
-#
+# 
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -25,7 +25,7 @@ if(ESP_PLATFORM)
     include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 else()
     if(NOT ENABLE_EMULATION)
-        set(PICO_USE_FASTEST_SUPPORTED_CLOCK 1)
+        set(PICO_USE_FASTEST_SUPPORTED_CLOCK 0)
         include(pico_sdk_import.cmake)
     endif()
 
