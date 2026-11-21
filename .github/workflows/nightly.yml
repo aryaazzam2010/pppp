@@ -1,57 +1,35 @@
-name: "Nightly deploy"
-
+name: Build YD-RP2040
 on:
-  schedule:
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  nightly:
-    name: Deploy nightly
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        refs: [main, development]
+  build:
     runs-on: ubuntu-latest
-    env:
-      SIGNING_KEY_PATH: ${{ github.workspace }}/../private.pem
     steps:
-      - name: Validate signing secret
-        run: |
-          test -n "${{ secrets.PRIVATE_KEY_B64 }}" || {
-            echo "PRIVATE_KEY_B64 is required for nightly signed releases." >&2
-            exit 1
-          }
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.refs }}
-          submodules: 'recursive'
-          persist-credentials: false
-      - name: Restore private key
+          submodules: recursive
+
+      - name: Install dependencies
         run: |
-          echo "${{ secrets.PRIVATE_KEY_B64 }}" | base64 -d > "${SIGNING_KEY_PATH}"
-          chmod 600 "${SIGNING_KEY_PATH}"
-      - name : Build
-        env:
-          PICO_SDK_PATH: ../pico-sdk
-          SECURE_BOOT_PKEY: ${{ github.workspace }}/../private.pem
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential
+
+      - name: Build Pico FIDO for YD-RP2040
         run: |
-           ./workflows/autobuild.sh pico
-           ./build_pico_fido.sh --no-eddsa
-           ./workflows/autobuild.sh esp32
-      - name: Delete private key
-        if: always()
-        run: rm -f "${SIGNING_KEY_PATH}"
-      - name: Update nightly release
-        uses: pyTooling/Actions/releaser@v6.7.0
+          mkdir build && cd build
+          cmake .. -DPICO_BOARD=pico \
+                   -DPICO_SDK_PATH=../pico-sdk \
+                   -DPICO_USE_FASTEST_SUPPORTED_CLOCK=0 \
+                   -DPICO_FLASH_SIZE_LIMIT_BYTES=2097152 \
+                   -DLED_GPIO=23 \
+                   -DLED_DRIVER=WS2812 \
+                   -DBUTTON_GPIO=24
+          make -j$(nproc)
+
+      - name: Upload UF2 Artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag: nightly-${{ matrix.refs }}
-          rm: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: release/*.*
+          name: pico_fido_yd_rp2040
+          path: build/*.uf2
