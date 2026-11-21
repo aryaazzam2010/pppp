@@ -21,7 +21,7 @@ sudo make install
 cd ../..
 mkdir build_pico
 cd build_pico
-cmake -DPICO_SDK_PATH=../pico-sdk ..
+cmake -DPICO_SDK_PATH=../pico-sdk -DPICO_FLASH_SIZE_LIMIT_BYTES=2097152 -DLED_GPIO=23 -DLED_DRIVER=WS2812 -DBUTTON_GPIO=24 ..
 make -j`nproc`
 cd ..
 elif [[ $1 == "esp32" ]]; then
